@@ -61,3 +61,5 @@ resource "google_compute_global_forwarding_rule" "http" {
     google_compute_global_address.app
   ]
 }
+
+// this is test
