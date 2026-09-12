@@ -1,6 +1,7 @@
 resource "google_project_service" "required_apis" {
   for_each = toset([
     "artifactregistry.googleapis.com",
+    "certificatemanager.googleapis.com",
     "compute.googleapis.com",
     "run.googleapis.com",
   ])
