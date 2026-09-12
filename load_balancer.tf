@@ -62,4 +62,17 @@ resource "google_compute_global_forwarding_rule" "http" {
   ]
 }
 
+
+resource "google_compute_global_forwarding_rule" "https" {
+  name                  = "global-lb-https-forwarding-rule"
+  target                = google_compute_target_https_proxy.app.id
+  port_range            = "443"
+  ip_address            = google_compute_global_address.app.address
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+
+  depends_on = [
+    google_compute_target_https_proxy.app,
+    google_compute_global_address.app
+  ]
+}
 // this is test
