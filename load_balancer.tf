@@ -119,5 +119,3 @@ resource "google_compute_global_forwarding_rule" "https" {
     google_compute_global_address.app
   ]
 }
-
-//
