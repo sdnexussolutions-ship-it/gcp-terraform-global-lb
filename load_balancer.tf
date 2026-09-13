@@ -75,31 +75,10 @@ resource "google_compute_global_forwarding_rule" "http" {
 # TLS 1.2 SSL POLICY
 # =========================================================
 
-resource "google_compute_ssl_policy" "global_tls12" { # <<< TLS 1.2 POLICY
-  name            = "global-alb-tls12"                # <<< TLS 1.2 POLICY
-  profile         = "MODERN"                          # <<< TLS 1.2 POLICY
-  min_tls_version = "TLS_1_2"                         # <<< TLS 1.2 POLICY
-}
-
-
-# =========================================================
-# HTTPS TARGET PROXY
-#
-# THIS IS WHERE THE TLS 1.2 POLICY IS ATTACHED
-# =========================================================
-
-resource "google_compute_target_https_proxy" "app" {
-  name    = "global-lb-https-proxy"
-  url_map = google_compute_url_map.app.id
-
-  certificate_map = "//certificatemanager.googleapis.com/${google_certificate_manager_certificate_map.app.id}"
-
-  ssl_policy = google_compute_ssl_policy.global_tls12.id # <<< TLS 1.2 POLICY
-
-  depends_on = [
-    google_compute_url_map.app,
-    google_compute_ssl_policy.global_tls12
-  ]
+resource "google_compute_ssl_policy" "global_tls12" {
+  name            = "global-alb-tls12"
+  profile         = "MODERN"
+  min_tls_version = "TLS_1_2"
 }
 
 
