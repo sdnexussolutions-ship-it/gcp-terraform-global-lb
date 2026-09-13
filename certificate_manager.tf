@@ -24,4 +24,6 @@ resource "google_compute_target_https_proxy" "app" {
   url_map = google_compute_url_map.app.id
 
   certificate_map = "//certificatemanager.googleapis.com/projects/${var.gcp_project_id}/locations/global/certificateMaps/${google_certificate_manager_certificate_map.app.name}"
+
+  ssl_policy = google_compute_ssl_policy.global_tls12.id
 }
