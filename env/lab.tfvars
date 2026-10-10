@@ -28,3 +28,18 @@ alb_health_checks = {
     unhealthy_threshold = 2
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB BACKEND SERVICES
+# --------------------------------------------------
+
+alb_backend_services = {
+  "be-nane1-lab-internal-alb-01" = {
+    protocol         = "HTTPS"
+    timeout_sec      = 30
+    health_check_key = "hc-nane1-lab-internal-alb-01"
+
+    zonal_neg_keys = [
+      "neg-nane1-a-lab-internal-alb-01"
+    ]
+  }
+}

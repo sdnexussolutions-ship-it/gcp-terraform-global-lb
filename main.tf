@@ -66,3 +66,36 @@ resource "google_compute_region_health_check" "alb_health_checks" {
     port = each.value.port
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB BACKEND SERVICES
+# --------------------------------------------------
+
+resource "google_compute_region_backend_service" "alb_backend_services" {
+
+  for_each = var.alb_backend_services
+
+  name                  = each.key
+  region                = var.region
+  protocol              = each.value.protocol
+  load_balancing_scheme = "INTERNAL_MANAGED"
+  timeout_sec           = each.value.timeout_sec
+
+  health_checks = [
+    google_compute_region_health_check.alb_health_checks[
+      each.value.health_check_key
+    ].id
+  ]
+
+  dynamic "backend" {
+    for_each = each.value.zonal_neg_keys
+
+    content {
+      group = google_compute_network_endpoint_group.alb_zonal_negs[
+        backend.value
+      ].id
+
+      balancing_mode        = "RATE"
+      max_rate_per_endpoint = 100
+    }
+  }
+}
