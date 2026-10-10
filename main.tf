@@ -46,3 +46,23 @@ resource "google_compute_network_endpoint" "alb_endpoints" {
   ip_address = each.value.ip_address
   port       = each.value.port
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB HEALTH CHECKS
+# --------------------------------------------------
+
+resource "google_compute_region_health_check" "alb_health_checks" {
+
+  for_each = var.alb_health_checks
+
+  name   = each.key
+  region = var.region
+
+  check_interval_sec  = each.value.check_interval_sec
+  timeout_sec         = each.value.timeout_sec
+  healthy_threshold   = each.value.healthy_threshold
+  unhealthy_threshold = each.value.unhealthy_threshold
+
+  tcp_health_check {
+    port = each.value.port
+  }
+}
