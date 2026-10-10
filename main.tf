@@ -85,7 +85,6 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
       each.value.health_check_key
     ].id
   ]
-
   dynamic "backend" {
     for_each = each.value.zonal_neg_keys
 
@@ -94,8 +93,9 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
         backend.value
       ].id
 
-      balancing_mode        = "RATE"
-      max_rate_per_endpoint = 100
+      balancing_mode  = "RATE"
+      max_rate        = 100
+      capacity_scaler = 1.0
     }
   }
 }
