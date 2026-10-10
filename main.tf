@@ -99,3 +99,18 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
     }
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB URL MAPS
+# --------------------------------------------------
+
+resource "google_compute_region_url_map" "alb_url_maps" {
+
+  for_each = var.alb_url_maps
+
+  name   = each.key
+  region = var.region
+
+  default_service = google_compute_region_backend_service.alb_backend_services[
+    each.value.default_backend_service_key
+  ].id
+}

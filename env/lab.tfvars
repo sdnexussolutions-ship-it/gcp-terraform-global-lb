@@ -43,3 +43,12 @@ alb_backend_services = {
     ]
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB URL MAPS
+# --------------------------------------------------
+
+alb_url_maps = {
+  "urlmap-nane1-lab-internal-alb-01" = {
+    default_backend_service_key = "be-nane1-lab-internal-alb-01"
+  }
+}
