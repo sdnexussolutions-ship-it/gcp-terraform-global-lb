@@ -27,3 +27,21 @@ variable "alb_zonal_negs" {
 
   default = {}
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB HEALTH CHECKS
+# --------------------------------------------------
+
+variable "alb_health_checks" {
+  description = "Regional health checks for the Internal Application Load Balancer"
+
+  type = map(object({
+    protocol            = string
+    port                = number
+    check_interval_sec  = number
+    timeout_sec         = number
+    healthy_threshold   = number
+    unhealthy_threshold = number
+  }))
+
+  default = {}
+}

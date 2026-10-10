@@ -14,3 +14,17 @@ alb_zonal_negs = {
     ]
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB HEALTH CHECKS
+# --------------------------------------------------
+
+alb_health_checks = {
+  "hc-nane1-lab-internal-alb-01" = {
+    protocol            = "TCP"
+    port                = 443
+    check_interval_sec  = 10
+    timeout_sec         = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
