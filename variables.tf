@@ -45,3 +45,19 @@ variable "alb_health_checks" {
 
   default = {}
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB BACKEND SERVICES
+# --------------------------------------------------
+
+variable "alb_backend_services" {
+  description = "Regional backend services for the Internal Application Load Balancer"
+
+  type = map(object({
+    protocol         = string
+    timeout_sec      = number
+    health_check_key = string
+    zonal_neg_keys   = list(string)
+  }))
+
+  default = {}
+}
