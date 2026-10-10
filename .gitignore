@@ -1,42 +1,69 @@
+# --------------------------------------------------
 # Terraform working directory
+# --------------------------------------------------
 .terraform/
 
+# --------------------------------------------------
 # Terraform state
+# --------------------------------------------------
 *.tfstate
 *.tfstate.*
 
+# --------------------------------------------------
 # Terraform plan files
+# --------------------------------------------------
 *.tfplan
 
+# --------------------------------------------------
 # Terraform crash logs
+# --------------------------------------------------
 crash.log
 crash.*.log
 
+# --------------------------------------------------
 # Terraform CLI configuration
+# --------------------------------------------------
 .terraformrc
 terraform.rc
 
+# --------------------------------------------------
 # Terraform variable files
+# Ignore by default
+# --------------------------------------------------
 *.tfvars
 *.tfvars.json
 
+# Allow non-sensitive lab configuration files
+!lab.auto.tfvars
+!env/lab.tfvars
+
+# --------------------------------------------------
 # Terraform override files
+# --------------------------------------------------
 override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
 
-# Environment / secrets
+# --------------------------------------------------
+# Environment variables and secrets
+# --------------------------------------------------
 .env
 .env.*
 
-# GCP credentials / service-account keys
+# --------------------------------------------------
+# GCP credentials and service account keys
+# --------------------------------------------------
 *credentials*.json
 *service-account*.json
 
+# --------------------------------------------------
 # Visual Studio Code
+# --------------------------------------------------
 .vscode/
 
+# --------------------------------------------------
 # Operating system files
+# --------------------------------------------------
 .DS_Store
 Thumbs.db
