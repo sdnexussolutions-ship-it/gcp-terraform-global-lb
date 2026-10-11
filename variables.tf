@@ -146,3 +146,9 @@ variable "alb_backend_client_private_key_pem" {
   type        = string
   sensitive   = true
 }
+
+variable "alb_frontend_client_ca_pem" {
+  description = "Trusted CA certificate for frontend mTLS client authentication"
+  type        = string
+  sensitive   = true
+}

@@ -148,6 +148,11 @@ resource "google_compute_region_ssl_certificate" "alb_frontend_certificate" {
 # REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
 # --------------------------------------------------
 
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
+# FRONTEND MTLS ENABLED
+# --------------------------------------------------
+
 resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
 
   for_each = var.alb_target_https_proxies
@@ -162,6 +167,8 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
   ssl_certificates = [
     google_compute_region_ssl_certificate.alb_frontend_certificate.id
   ]
+
+  server_tls_policy = google_network_security_server_tls_policy.alb_frontend_mtls.id
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND IP RESERVATIONS
@@ -231,4 +238,36 @@ resource "google_network_security_backend_authentication_config" "alb_backend_au
   well_known_roots = "PUBLIC_ROOTS"
 
   client_certificate = google_certificate_manager_certificate.alb_backend_client_cert.id
+}
+
+
+# --------------------------------------------------
+# FRONTEND MTLS - TRUST CONFIG
+# --------------------------------------------------
+
+resource "google_certificate_manager_trust_config" "alb_frontend_trust" {
+  name     = "trust-nane1-lab-alb-frontend-01"
+  location = var.region
+
+  trust_stores {
+    trust_anchors {
+      pem_certificate = var.alb_frontend_client_ca_pem
+    }
+  }
+}
+# --------------------------------------------------
+# FRONTEND MTLS - SERVER TLS POLICY
+# --------------------------------------------------
+
+resource "google_network_security_server_tls_policy" "alb_frontend_mtls" {
+  name     = "tls-policy-nane1-lab-alb-frontend-01"
+  location = var.region
+
+  allow_open = false
+
+  mtls_policy {
+    client_validation_mode = "REJECT_INVALID"
+
+    client_validation_trust_config = google_certificate_manager_trust_config.alb_frontend_trust.id
+  }
 }
