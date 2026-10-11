@@ -116,3 +116,18 @@ variable "alb_frontend_ips" {
     subnetwork   = string
   }))
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FORWARDING RULES
+# --------------------------------------------------
+
+variable "alb_forwarding_rules" {
+  description = "Regional internal ALB frontend forwarding rules"
+
+  type = map(object({
+    network         = string
+    subnetwork      = string
+    ip_address_key  = string
+    https_proxy_key = string
+    port            = number
+  }))
+}

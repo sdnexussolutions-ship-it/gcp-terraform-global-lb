@@ -164,3 +164,27 @@ resource "google_compute_address" "alb_frontend_ips" {
 
   purpose = "GCE_ENDPOINT"
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FORWARDING RULES
+# --------------------------------------------------
+
+resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
+  for_each = var.alb_forwarding_rules
+
+  name                  = each.key
+  region                = var.region
+  load_balancing_scheme = "INTERNAL_MANAGED"
+  network               = each.value.network
+  subnetwork            = each.value.subnetwork
+
+  ip_address = google_compute_address.alb_frontend_ips[
+    each.value.ip_address_key
+  ].address
+
+  target = google_compute_region_target_https_proxy.alb_target_https_proxies[
+    each.value.https_proxy_key
+  ].id
+
+  ip_protocol = "TCP"
+  port_range  = tostring(each.value.port)
+}

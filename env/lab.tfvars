@@ -71,3 +71,16 @@ alb_frontend_ips = {
     subnetwork   = "default"
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FORWARDING RULES
+# --------------------------------------------------
+
+alb_forwarding_rules = {
+  "fr-nane1-lab-internal-alb-01" = {
+    network         = "default"
+    subnetwork      = "default"
+    ip_address_key  = "ip-nane1-lab-internal-alb-01"
+    https_proxy_key = "https-proxy-nane1-lab-internal-alb-01"
+    port            = 443
+  }
+}
