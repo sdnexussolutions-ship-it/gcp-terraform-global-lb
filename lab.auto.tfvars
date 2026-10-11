@@ -61,3 +61,13 @@ alb_target_https_proxies = {
     url_map_key = "urlmap-nane1-lab-internal-alb-01"
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FRONTEND IP ADDRESSES
+# --------------------------------------------------
+
+alb_frontend_ips = {
+  "ip-nane1-lab-internal-alb-01" = {
+    address_type = "INTERNAL"
+    subnetwork   = "default"
+  }
+}

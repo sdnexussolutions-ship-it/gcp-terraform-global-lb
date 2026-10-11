@@ -104,3 +104,15 @@ variable "alb_frontend_private_key_pem" {
   sensitive   = true
   default     = null
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FRONTEND IP ADDRESSES
+# --------------------------------------------------
+
+variable "alb_frontend_ips" {
+  description = "Regional internal IP reservations for Application Load Balancer frontends"
+
+  type = map(object({
+    address_type = string
+    subnetwork   = string
+  }))
+}

@@ -149,3 +149,18 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
     google_compute_region_ssl_certificate.alb_frontend_certificate.id
   ]
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FRONTEND IP RESERVATIONS
+# --------------------------------------------------
+
+resource "google_compute_address" "alb_frontend_ips" {
+
+  for_each = var.alb_frontend_ips
+
+  name         = each.key
+  region       = var.region
+  address_type = each.value.address_type
+  subnetwork   = each.value.subnetwork
+
+  purpose = "GCE_ENDPOINT"
+}
