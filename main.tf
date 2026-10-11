@@ -114,3 +114,19 @@ resource "google_compute_region_url_map" "alb_url_maps" {
     each.value.default_backend_service_key
   ].id
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FRONTEND SSL CERTIFICATE
+# --------------------------------------------------
+
+resource "google_compute_region_ssl_certificate" "alb_frontend_certificate" {
+
+  name   = "cert-nane1-lab-internal-alb-01"
+  region = var.region
+
+  certificate = var.alb_frontend_certificate_pem
+  private_key = var.alb_frontend_private_key_pem
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}

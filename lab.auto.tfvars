@@ -52,3 +52,12 @@ alb_url_maps = {
     default_backend_service_key = "be-nane1-lab-internal-alb-01"
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
+# --------------------------------------------------
+
+alb_target_https_proxies = {
+  "https-proxy-nane1-lab-internal-alb-01" = {
+    url_map_key = "urlmap-nane1-lab-internal-alb-01"
+  }
+}

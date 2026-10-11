@@ -74,3 +74,33 @@ variable "alb_url_maps" {
 
   default = {}
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
+# --------------------------------------------------
+
+variable "alb_target_https_proxies" {
+  description = "Regional target HTTPS proxies for the Internal Application Load Balancer"
+
+  type = map(object({
+    url_map_key = string
+  }))
+
+  default = {}
+}
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB FRONTEND TLS CERTIFICATE
+# --------------------------------------------------
+
+variable "alb_frontend_certificate_pem" {
+  description = "PEM-encoded frontend server certificate and chain"
+  type        = string
+  sensitive   = true
+  default     = null
+}
+
+variable "alb_frontend_private_key_pem" {
+  description = "PEM-encoded frontend server private key"
+  type        = string
+  sensitive   = true
+  default     = null
+}
