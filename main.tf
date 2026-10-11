@@ -130,3 +130,22 @@ resource "google_compute_region_ssl_certificate" "alb_frontend_certificate" {
     create_before_destroy = true
   }
 }
+# --------------------------------------------------
+# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
+# --------------------------------------------------
+
+resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
+
+  for_each = var.alb_target_https_proxies
+
+  name   = each.key
+  region = var.region
+
+  url_map = google_compute_region_url_map.alb_url_maps[
+    each.value.url_map_key
+  ].id
+
+  ssl_certificates = [
+    google_compute_region_ssl_certificate.alb_frontend_certificate.id
+  ]
+}
