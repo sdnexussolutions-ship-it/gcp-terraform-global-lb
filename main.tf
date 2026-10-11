@@ -85,6 +85,7 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
       each.value.health_check_key
     ].id
   ]
+
   dynamic "backend" {
     for_each = each.value.zonal_neg_keys
 
@@ -98,7 +99,20 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
       capacity_scaler = 1.0
     }
   }
+
+  # Backend TLS and mutual TLS authentication
+  tls_settings {
+
+    sni = "glb-prd.igmfinancial.net"
+
+    subject_alt_names {
+      dns_name = "glb-prd.igmfinancial.net"
+    }
+
+    authentication_config = "//networksecurity.googleapis.com/${google_network_security_backend_authentication_config.alb_backend_auth.id}"
+  }
 }
+
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB URL MAPS
 # --------------------------------------------------
@@ -187,4 +201,34 @@ resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
 
   ip_protocol = "TCP"
   port_range  = tostring(each.value.port)
+}
+# --------------------------------------------------
+# BACKEND MTLS - ALB CLIENT CERTIFICATE
+# --------------------------------------------------
+
+resource "google_certificate_manager_certificate" "alb_backend_client_cert" {
+
+  name     = "cert-nane1-lab-alb-backend-client-01"
+  location = var.region
+
+  scope = "CLIENT_AUTH"
+
+  self_managed {
+    pem_certificate = var.alb_backend_client_certificate_pem
+    pem_private_key = var.alb_backend_client_private_key_pem
+  }
+}
+
+# --------------------------------------------------
+# BACKEND MTLS - AUTHENTICATION CONFIG
+# --------------------------------------------------
+
+resource "google_network_security_backend_authentication_config" "alb_backend_auth" {
+
+  name     = "backend-auth-nane1-lab-internal-alb-01"
+  location = var.region
+
+  well_known_roots = "PUBLIC_ROOTS"
+
+  client_certificate = google_certificate_manager_certificate.alb_backend_client_cert.id
 }

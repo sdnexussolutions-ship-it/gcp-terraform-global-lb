@@ -131,3 +131,18 @@ variable "alb_forwarding_rules" {
     port            = number
   }))
 }
+# --------------------------------------------------
+# BACKEND MTLS CERTIFICATE MATERIAL
+# --------------------------------------------------
+
+variable "alb_backend_client_certificate_pem" {
+  description = "PEM certificate presented by the ALB to the backend"
+  type        = string
+  sensitive   = true
+}
+
+variable "alb_backend_client_private_key_pem" {
+  description = "Private key for the ALB backend client certificate"
+  type        = string
+  sensitive   = true
+}
