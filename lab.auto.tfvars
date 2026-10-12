@@ -121,4 +121,11 @@ learning_subnets = {
     purpose       = "REGIONAL_MANAGED_PROXY"
     role          = "ACTIVE"
   }
+  "proxy-only-vpc2" = {
+    vpc_name      = "terraform-learning-vpc-02"
+    region        = "northamerica-northeast1"
+    ip_cidr_range = "10.20.100.0/26"
+    purpose       = "REGIONAL_MANAGED_PROXY"
+    role          = "ACTIVE"
+  }
 }
