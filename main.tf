@@ -271,3 +271,22 @@ resource "google_network_security_server_tls_policy" "alb_frontend_mtls" {
     client_validation_trust_config = google_certificate_manager_trust_config.alb_frontend_trust.id
   }
 }
+
+# Create multiple learning VPCs
+resource "google_compute_network" "learning_vpcs" {
+  for_each = var.learning_vpcs
+
+  name                    = each.key
+  auto_create_subnetworks = each.value.auto_create_subnetworks
+}
+
+# Create three learning subnets
+resource "google_compute_subnetwork" "learning_subnets" {
+  for_each = var.learning_subnets
+
+  name          = each.key
+  region        = each.value.region
+  ip_cidr_range = each.value.ip_cidr_range
+
+  network = google_compute_network.learning_vpcs[each.value.vpc_name].id
+}

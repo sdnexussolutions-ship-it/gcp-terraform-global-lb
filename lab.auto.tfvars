@@ -84,3 +84,34 @@ alb_forwarding_rules = {
     port            = 443
   }
 }
+# Learning VPC configurations
+learning_vpcs = {
+  "terraform-learning-vpc-01" = {
+    auto_create_subnetworks = false
+  }
+
+  "terraform-learning-vpc-02" = {
+    auto_create_subnetworks = false
+  }
+}
+
+# Learning subnet configurations
+learning_subnets = {
+  "web-subnet" = {
+    vpc_name      = "terraform-learning-vpc-01"
+    region        = "northamerica-northeast1"
+    ip_cidr_range = "10.10.1.0/24"
+  }
+
+  "app-subnet" = {
+    vpc_name      = "terraform-learning-vpc-01"
+    region        = "northamerica-northeast1"
+    ip_cidr_range = "10.10.2.0/24"
+  }
+
+  "dev-subnet" = {
+    vpc_name      = "terraform-learning-vpc-02"
+    region        = "northamerica-northeast1"
+    ip_cidr_range = "10.20.1.0/24"
+  }
+}
