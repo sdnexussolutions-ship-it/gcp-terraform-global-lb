@@ -152,3 +152,24 @@ variable "alb_frontend_client_ca_pem" {
   type        = string
   sensitive   = true
 }
+
+
+# Configuration for multiple learning VPCs
+variable "learning_vpcs" {
+  description = "VPC networks for Terraform learning"
+
+  type = map(object({
+    auto_create_subnetworks = bool
+  }))
+}
+
+# Configuration for our learning subnets
+variable "learning_subnets" {
+  description = "Subnets for our learning VPCs"
+
+  type = map(object({
+    vpc_name      = string
+    region        = string
+    ip_cidr_range = string
+  }))
+}
