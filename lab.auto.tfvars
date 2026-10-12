@@ -41,6 +41,15 @@ alb_health_checks = {
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
+
+  "hc-nane1-learning-alb-01" = {
+    protocol            = "TCP"
+    port                = 443
+    check_interval_sec  = 10
+    timeout_sec         = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB BACKEND SERVICES
@@ -54,6 +63,15 @@ alb_backend_services = {
 
     zonal_neg_keys = [
       "neg-nane1-a-lab-internal-alb-01"
+    ]
+  }
+  "be-nane1-learning-alb-01" = {
+    protocol         = "HTTPS"
+    timeout_sec      = 30
+    health_check_key = "hc-nane1-learning-alb-01"
+
+    zonal_neg_keys = [
+      "neg-nane1-a-learning-alb-01"
     ]
   }
 }
