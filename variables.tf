@@ -163,13 +163,15 @@ variable "learning_vpcs" {
   }))
 }
 
-# Configuration for our learning subnets
+# Configuration for ordinary and proxy-only subnets
 variable "learning_subnets" {
-  description = "Subnets for our learning VPCs"
+  description = "Subnet configurations for learning VPCs"
 
   type = map(object({
     vpc_name      = string
     region        = string
     ip_cidr_range = string
+    purpose       = optional(string, "PRIVATE")
+    role          = optional(string)
   }))
 }
