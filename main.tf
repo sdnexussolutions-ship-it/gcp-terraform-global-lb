@@ -280,16 +280,14 @@ resource "google_compute_network" "learning_vpcs" {
   auto_create_subnetworks = each.value.auto_create_subnetworks
 }
 
-# Create three learning subnets
 resource "google_compute_subnetwork" "learning_subnets" {
   for_each = var.learning_subnets
 
   name          = each.key
   region        = each.value.region
   ip_cidr_range = each.value.ip_cidr_range
+  network       = google_compute_network.learning_vpcs[each.value.vpc_name].id
 
-  network = google_compute_network.learning_vpcs[each.value.vpc_name].id
+  purpose = each.value.purpose
+  role    = each.value.role
 }
-
-
-# Create three learning subnets3333
