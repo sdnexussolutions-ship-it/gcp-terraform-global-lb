@@ -57,6 +57,7 @@ variable "alb_backend_services" {
     timeout_sec      = number
     health_check_key = string
     zonal_neg_keys   = list(string)
+    backend_auth_key = string
   }))
 
   default = {}
@@ -82,7 +83,9 @@ variable "alb_target_https_proxies" {
   description = "Regional target HTTPS proxies for the Internal Application Load Balancer"
 
   type = map(object({
-    url_map_key = string
+    url_map_key           = string
+    ssl_certificate_key   = string
+    server_tls_policy_key = string
   }))
 
   default = {}
@@ -114,6 +117,7 @@ variable "alb_frontend_ips" {
   type = map(object({
     address_type = string
     subnetwork   = string
+    learning_vpc = optional(bool, false)
   }))
 }
 # --------------------------------------------------
@@ -129,6 +133,7 @@ variable "alb_forwarding_rules" {
     ip_address_key  = string
     https_proxy_key = string
     port            = number
+    learning_vpc    = optional(bool, false)
   }))
 }
 # --------------------------------------------------
