@@ -1,3 +1,7 @@
+# Read information about our existing GCP project
+data "google_project" "current" {
+  project_id = var.gcp_project_id
+}
 
 # --------------------------------------------------
 # ZONAL NETWORK ENDPOINT GROUPS
@@ -268,7 +272,7 @@ resource "google_network_security_server_tls_policy" "alb_frontend_mtls" {
   mtls_policy {
     client_validation_mode = "REJECT_INVALID"
 
-    client_validation_trust_config = google_certificate_manager_trust_config.alb_frontend_trust.id
+    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.alb_frontend_trust.name}"
   }
 }
 
