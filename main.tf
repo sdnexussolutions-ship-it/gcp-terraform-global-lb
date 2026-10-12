@@ -290,3 +290,6 @@ resource "google_compute_subnetwork" "learning_subnets" {
 
   network = google_compute_network.learning_vpcs[each.value.vpc_name].id
 }
+
+
+# Create three learning subnets3333
