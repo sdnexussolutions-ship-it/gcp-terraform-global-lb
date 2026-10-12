@@ -2,6 +2,12 @@
 data "google_project" "current" {
   project_id = var.gcp_project_id
 }
+locals {
+  backend_auth_ids = {
+    production      = google_network_security_backend_authentication_config.alb_backend_auth.id
+    learning-alb-01 = google_network_security_backend_authentication_config.learning_alb_01_backend_auth.id
+  }
+}
 
 # --------------------------------------------------
 # ZONAL NETWORK ENDPOINT GROUPS
@@ -113,7 +119,7 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
       dns_name = "glb-prd.igmfinancial.net"
     }
 
-    authentication_config = "//networksecurity.googleapis.com/${google_network_security_backend_authentication_config.alb_backend_auth.id}"
+    authentication_config = "//networksecurity.googleapis.com/${local.backend_auth_ids[each.value.backend_auth_key]}"
   }
 }
 
@@ -148,13 +154,25 @@ resource "google_compute_region_ssl_certificate" "alb_frontend_certificate" {
     create_before_destroy = true
   }
 }
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
-# --------------------------------------------------
 
 # --------------------------------------------------
+# LEARNING ALB 1 - FRONTEND SSL CERTIFICATE
+# --------------------------------------------------
+
+resource "google_compute_region_ssl_certificate" "learning_alb_01_frontend_certificate" {
+
+  name   = "cert-nane1-learning-alb-01"
+  region = var.region
+
+  certificate = var.alb_frontend_certificate_pem
+  private_key = var.alb_frontend_private_key_pem
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+# --------------------------------------------------
 # REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
-# FRONTEND MTLS ENABLED
 # --------------------------------------------------
 
 resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
@@ -169,10 +187,16 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
   ].id
 
   ssl_certificates = [
-    google_compute_region_ssl_certificate.alb_frontend_certificate.id
+    {
+      production      = google_compute_region_ssl_certificate.alb_frontend_certificate.id
+      learning-alb-01 = google_compute_region_ssl_certificate.learning_alb_01_frontend_certificate.id
+    }[each.value.ssl_certificate_key]
   ]
 
-  server_tls_policy = google_network_security_server_tls_policy.alb_frontend_mtls.id
+  server_tls_policy = {
+    production      = google_network_security_server_tls_policy.alb_frontend_mtls.id
+    learning-alb-01 = google_network_security_server_tls_policy.learning_alb_01_frontend_mtls.id
+  }[each.value.server_tls_policy_key]
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND IP RESERVATIONS
@@ -185,7 +209,7 @@ resource "google_compute_address" "alb_frontend_ips" {
   name         = each.key
   region       = var.region
   address_type = each.value.address_type
-  subnetwork   = each.value.subnetwork
+  subnetwork   = each.value.learning_vpc ? google_compute_subnetwork.learning_subnets[each.value.subnetwork].id : each.value.subnetwork
 
   purpose = "GCE_ENDPOINT"
 }
@@ -199,8 +223,9 @@ resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
   name                  = each.key
   region                = var.region
   load_balancing_scheme = "INTERNAL_MANAGED"
-  network               = each.value.network
-  subnetwork            = each.value.subnetwork
+  network               = each.value.learning_vpc ? google_compute_network.learning_vpcs[each.value.network].id : each.value.network
+
+  subnetwork = each.value.learning_vpc ? google_compute_subnetwork.learning_subnets[each.value.subnetwork].id : each.value.subnetwork
 
   ip_address = google_compute_address.alb_frontend_ips[
     each.value.ip_address_key
@@ -231,6 +256,22 @@ resource "google_certificate_manager_certificate" "alb_backend_client_cert" {
 }
 
 # --------------------------------------------------
+# LEARNING ALB 1 - BACKEND MTLS CLIENT CERTIFICATE
+# --------------------------------------------------
+
+resource "google_certificate_manager_certificate" "learning_alb_01_backend_client_cert" {
+
+  name     = "cert-nane1-learning-alb-backend-client-01"
+  location = var.region
+
+  scope = "CLIENT_AUTH"
+
+  self_managed {
+    pem_certificate = var.alb_backend_client_certificate_pem
+    pem_private_key = var.alb_backend_client_private_key_pem
+  }
+}
+# --------------------------------------------------
 # BACKEND MTLS - AUTHENTICATION CONFIG
 # --------------------------------------------------
 
@@ -244,13 +285,39 @@ resource "google_network_security_backend_authentication_config" "alb_backend_au
   client_certificate = google_certificate_manager_certificate.alb_backend_client_cert.id
 }
 
+# --------------------------------------------------
+# LEARNING ALB 1 - BACKEND MTLS AUTHENTICATION CONFIG
+# --------------------------------------------------
 
+resource "google_network_security_backend_authentication_config" "learning_alb_01_backend_auth" {
+
+  name     = "backend-auth-nane1-learning-alb-01"
+  location = var.region
+
+  well_known_roots = "PUBLIC_ROOTS"
+
+  client_certificate = google_certificate_manager_certificate.learning_alb_01_backend_client_cert.id
+}
 # --------------------------------------------------
 # FRONTEND MTLS - TRUST CONFIG
 # --------------------------------------------------
 
 resource "google_certificate_manager_trust_config" "alb_frontend_trust" {
   name     = "trust-nane1-lab-alb-frontend-01"
+  location = var.region
+
+  trust_stores {
+    trust_anchors {
+      pem_certificate = var.alb_frontend_client_ca_pem
+    }
+  }
+}
+# --------------------------------------------------
+# LEARNING ALB 1 - FRONTEND MTLS TRUST CONFIG
+# --------------------------------------------------
+
+resource "google_certificate_manager_trust_config" "learning_alb_01_frontend_trust" {
+  name     = "trust-nane1-learning-alb-frontend-01"
   location = var.region
 
   trust_stores {
@@ -275,6 +342,22 @@ resource "google_network_security_server_tls_policy" "alb_frontend_mtls" {
     client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.alb_frontend_trust.name}"
   }
 }
+# --------------------------------------------------
+# LEARNING ALB 1 - FRONTEND MTLS SERVER TLS POLICY
+# --------------------------------------------------
+
+resource "google_network_security_server_tls_policy" "learning_alb_01_frontend_mtls" {
+  name     = "tls-policy-nane1-learning-alb-frontend-01"
+  location = var.region
+
+  allow_open = false
+
+  mtls_policy {
+    client_validation_mode = "REJECT_INVALID"
+
+    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.learning_alb_01_frontend_trust.name}"
+  }
+}
 
 # Create multiple learning VPCs
 resource "google_compute_network" "learning_vpcs" {
@@ -294,4 +377,32 @@ resource "google_compute_subnetwork" "learning_subnets" {
 
   purpose = each.value.purpose
   role    = each.value.role
+}
+
+# --------------------------------------------------
+# VPC PEERING - LEARNING VPC 1 TO DEFAULT VPC
+# --------------------------------------------------
+
+resource "google_compute_network_peering" "learning_vpc_01_to_default" {
+  name = "peer-learning-vpc01-to-default"
+
+  network = google_compute_network.learning_vpcs[
+    "terraform-learning-vpc-01"
+  ].self_link
+
+  peer_network = "projects/${var.gcp_project_id}/global/networks/default"
+}
+
+# --------------------------------------------------
+# VPC PEERING - DEFAULT VPC TO LEARNING VPC 1
+# --------------------------------------------------
+
+resource "google_compute_network_peering" "default_to_learning_vpc_01" {
+  name = "peer-default-to-learning-vpc01"
+
+  network = "projects/${var.gcp_project_id}/global/networks/default"
+
+  peer_network = google_compute_network.learning_vpcs[
+    "terraform-learning-vpc-01"
+  ].self_link
 }

@@ -60,19 +60,16 @@ alb_backend_services = {
     protocol         = "HTTPS"
     timeout_sec      = 30
     health_check_key = "hc-nane1-lab-internal-alb-01"
-
-    zonal_neg_keys = [
-      "neg-nane1-a-lab-internal-alb-01"
-    ]
+    zonal_neg_keys   = ["neg-nane1-a-lab-internal-alb-01"]
+    backend_auth_key = "production"
   }
+
   "be-nane1-learning-alb-01" = {
     protocol         = "HTTPS"
     timeout_sec      = 30
     health_check_key = "hc-nane1-learning-alb-01"
-
-    zonal_neg_keys = [
-      "neg-nane1-a-learning-alb-01"
-    ]
+    zonal_neg_keys   = ["neg-nane1-a-learning-alb-01"]
+    backend_auth_key = "learning-alb-01"
   }
 }
 # --------------------------------------------------
@@ -83,6 +80,9 @@ alb_url_maps = {
   "urlmap-nane1-lab-internal-alb-01" = {
     default_backend_service_key = "be-nane1-lab-internal-alb-01"
   }
+  "urlmap-nane1-learning-alb-01" = {
+    default_backend_service_key = "be-nane1-learning-alb-01"
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
@@ -90,7 +90,15 @@ alb_url_maps = {
 
 alb_target_https_proxies = {
   "https-proxy-nane1-lab-internal-alb-01" = {
-    url_map_key = "urlmap-nane1-lab-internal-alb-01"
+    url_map_key           = "urlmap-nane1-lab-internal-alb-01"
+    ssl_certificate_key   = "production"
+    server_tls_policy_key = "production"
+  }
+
+  "https-proxy-nane1-learning-alb-01" = {
+    url_map_key           = "urlmap-nane1-learning-alb-01"
+    ssl_certificate_key   = "learning-alb-01"
+    server_tls_policy_key = "learning-alb-01"
   }
 }
 # --------------------------------------------------
@@ -102,11 +110,16 @@ alb_frontend_ips = {
     address_type = "INTERNAL"
     subnetwork   = "default"
   }
+
+  "ip-nane1-learning-alb-01" = {
+    address_type = "INTERNAL"
+    subnetwork   = "web-subnet"
+    learning_vpc = true
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FORWARDING RULES
 # --------------------------------------------------
-
 alb_forwarding_rules = {
   "fr-nane1-lab-internal-alb-01" = {
     network         = "default"
@@ -114,6 +127,15 @@ alb_forwarding_rules = {
     ip_address_key  = "ip-nane1-lab-internal-alb-01"
     https_proxy_key = "https-proxy-nane1-lab-internal-alb-01"
     port            = 443
+  }
+
+  "fr-nane1-learning-alb-01" = {
+    network         = "terraform-learning-vpc-01"
+    subnetwork      = "web-subnet"
+    ip_address_key  = "ip-nane1-learning-alb-01"
+    https_proxy_key = "https-proxy-nane1-learning-alb-01"
+    port            = 443
+    learning_vpc    = true
   }
 }
 # Learning VPC configurations
