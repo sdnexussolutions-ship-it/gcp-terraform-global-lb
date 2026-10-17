@@ -6,8 +6,10 @@ locals {
   backend_auth_ids = {
     production      = google_network_security_backend_authentication_config.alb_backend_auth.id
     learning-alb-01 = google_network_security_backend_authentication_config.learning_alb_01_backend_auth.id
+    learning-alb-02 = google_network_security_backend_authentication_config.learning_alb_02_backend_auth.id
   }
 }
+
 
 # --------------------------------------------------
 # ZONAL NETWORK ENDPOINT GROUPS
@@ -154,6 +156,13 @@ resource "google_compute_region_ssl_certificate" "alb_frontend_certificate" {
     create_before_destroy = true
   }
 }
+resource "google_compute_region_ssl_certificate" "learning_alb_02_frontend_certificate" {
+  name        = "cert-nane1-learning-alb-02"
+  region      = var.region
+  certificate = var.alb_frontend_certificate_pem
+  private_key = var.alb_frontend_private_key_pem
+  lifecycle { create_before_destroy = true }
+}
 
 # --------------------------------------------------
 # LEARNING ALB 1 - FRONTEND SSL CERTIFICATE
@@ -190,12 +199,14 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
     {
       production      = google_compute_region_ssl_certificate.alb_frontend_certificate.id
       learning-alb-01 = google_compute_region_ssl_certificate.learning_alb_01_frontend_certificate.id
+      learning-alb-02 = google_compute_region_ssl_certificate.learning_alb_02_frontend_certificate.id
     }[each.value.ssl_certificate_key]
   ]
 
   server_tls_policy = {
     production      = google_network_security_server_tls_policy.alb_frontend_mtls.id
     learning-alb-01 = google_network_security_server_tls_policy.learning_alb_01_frontend_mtls.id
+    learning-alb-02 = google_network_security_server_tls_policy.learning_alb_02_frontend_mtls.id
   }[each.value.server_tls_policy_key]
 }
 # --------------------------------------------------
@@ -405,4 +416,54 @@ resource "google_compute_network_peering" "default_to_learning_vpc_01" {
   peer_network = google_compute_network.learning_vpcs[
     "terraform-learning-vpc-01"
   ].self_link
+}
+
+resource "google_certificate_manager_certificate" "learning_alb_02_backend_client_cert" {
+  name     = "cert-nane1-learning-alb-backend-client-02"
+  location = var.region
+  scope    = "CLIENT_AUTH"
+  self_managed {
+    pem_certificate = var.alb_backend_client_certificate_pem
+    pem_private_key = var.alb_backend_client_private_key_pem
+  }
+}
+
+resource "google_network_security_backend_authentication_config" "learning_alb_02_backend_auth" {
+  name               = "backend-auth-nane1-learning-alb-02"
+  location           = var.region
+  well_known_roots   = "PUBLIC_ROOTS"
+  client_certificate = google_certificate_manager_certificate.learning_alb_02_backend_client_cert.id
+}
+resource "google_certificate_manager_trust_config" "learning_alb_02_frontend_trust" {
+  name     = "trust-nane1-learning-alb-frontend-02"
+  location = var.region
+  trust_stores {
+    trust_anchors {
+      pem_certificate = var.alb_frontend_client_ca_pem
+    }
+  }
+}
+
+resource "google_network_security_server_tls_policy" "learning_alb_02_frontend_mtls" {
+  name       = "tls-policy-nane1-learning-alb-frontend-02"
+  location   = var.region
+  allow_open = false
+  mtls_policy {
+    client_validation_mode         = "REJECT_INVALID"
+    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.learning_alb_02_frontend_trust.name}"
+  }
+}
+
+
+
+resource "google_compute_network_peering" "learning_vpc_02_to_default" {
+  name         = "peer-learning-vpc02-to-default"
+  network      = google_compute_network.learning_vpcs["terraform-learning-vpc-02"].self_link
+  peer_network = "projects/${var.gcp_project_id}/global/networks/default"
+}
+
+resource "google_compute_network_peering" "default_to_learning_vpc_02" {
+  name         = "peer-default-to-learning-vpc02"
+  network      = "projects/${var.gcp_project_id}/global/networks/default"
+  peer_network = google_compute_network.learning_vpcs["terraform-learning-vpc-02"].self_link
 }

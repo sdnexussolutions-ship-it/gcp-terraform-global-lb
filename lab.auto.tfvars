@@ -13,6 +13,20 @@ alb_zonal_negs = {
       }
     ]
   }
+  "neg-nane1-a-learning-alb-02" = {
+    zone         = "northamerica-northeast1-a"
+    network      = "default"
+    subnetwork   = "default"
+    default_port = 443
+    network_endpoints = [
+      {
+        instance   = "internal-tcp-backend-01"
+        ip_address = "10.162.0.2"
+        port       = 443
+      }
+    ]
+  }
+
   "neg-nane1-a-learning-alb-01" = {
     zone         = "northamerica-northeast1-a"
     network      = "default"
@@ -50,6 +64,14 @@ alb_health_checks = {
     healthy_threshold   = 2
     unhealthy_threshold = 2
   }
+  "hc-nane1-learning-alb-02" = {
+    protocol            = "TCP"
+    port                = 443
+    check_interval_sec  = 5
+    timeout_sec         = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB BACKEND SERVICES
@@ -71,6 +93,13 @@ alb_backend_services = {
     zonal_neg_keys   = ["neg-nane1-a-learning-alb-01"]
     backend_auth_key = "learning-alb-01"
   }
+  "be-nane1-learning-alb-02" = {
+    protocol         = "HTTPS"
+    timeout_sec      = 30
+    health_check_key = "hc-nane1-learning-alb-02"
+    zonal_neg_keys   = ["neg-nane1-a-learning-alb-02"]
+    backend_auth_key = "learning-alb-02"
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB URL MAPS
@@ -83,6 +112,10 @@ alb_url_maps = {
   "urlmap-nane1-learning-alb-01" = {
     default_backend_service_key = "be-nane1-learning-alb-01"
   }
+  "urlmap-nane1-learning-alb-02" = {
+    default_backend_service_key = "be-nane1-learning-alb-02"
+  }
+
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
@@ -116,6 +149,11 @@ alb_frontend_ips = {
     subnetwork   = "web-subnet"
     learning_vpc = true
   }
+  "ip-nane1-learning-alb-02" = {
+    address_type = "INTERNAL"
+    subnetwork   = "dev-subnet"
+    learning_vpc = true
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FORWARDING RULES
@@ -134,6 +172,14 @@ alb_forwarding_rules = {
     subnetwork      = "web-subnet"
     ip_address_key  = "ip-nane1-learning-alb-01"
     https_proxy_key = "https-proxy-nane1-learning-alb-01"
+    port            = 443
+    learning_vpc    = true
+  }
+  "fr-nane1-learning-alb-02" = {
+    network         = "terraform-learning-vpc-02"
+    subnetwork      = "dev-subnet"
+    ip_address_key  = "ip-nane1-learning-alb-02"
+    https_proxy_key = "https-proxy-nane1-learning-alb-02"
     port            = 443
     learning_vpc    = true
   }
