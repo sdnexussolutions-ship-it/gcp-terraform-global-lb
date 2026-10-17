@@ -65,6 +65,7 @@ alb_health_checks = {
     unhealthy_threshold = 2
   }
   "hc-nane1-learning-alb-02" = {
+    protocol            = "TCP"
     port                = 443
     check_interval_sec  = 5
     timeout_sec         = 5
