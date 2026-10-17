@@ -133,6 +133,11 @@ alb_target_https_proxies = {
     ssl_certificate_key   = "learning-alb-01"
     server_tls_policy_key = "learning-alb-01"
   }
+  "https-proxy-nane1-learning-alb-02" = {
+    url_map_key           = "urlmap-nane1-learning-alb-02"
+    ssl_certificate_key   = "learning-alb-02"
+    server_tls_policy_key = "learning-alb-02"
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND IP ADDRESSES
