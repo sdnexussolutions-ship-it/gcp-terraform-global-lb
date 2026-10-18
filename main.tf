@@ -7,6 +7,7 @@ locals {
     production      = google_network_security_backend_authentication_config.alb_backend_auth.id
     learning-alb-01 = google_network_security_backend_authentication_config.learning_alb_01_backend_auth.id
     learning-alb-02 = google_network_security_backend_authentication_config.learning_alb_02_backend_auth.id
+    mule-sbx-alb-01 = google_network_security_backend_authentication_config.mule-sbx_alb_01_backend_auth.id
   }
 }
 
@@ -180,9 +181,28 @@ resource "google_compute_region_ssl_certificate" "learning_alb_01_frontend_certi
     create_before_destroy = true
   }
 }
+
+# --------------------------------------------------
+# MULE SBX ALB 1 - FRONTEND SSL CERTIFICATE
+# --------------------------------------------------
+
+resource "google_compute_region_ssl_certificate" "mule_sbx_alb_01_frontend_certificate" {
+
+  name   = "cert-nane1-mule-sbx-alb-01"
+  region = var.region
+
+  certificate = var.alb_frontend_certificate_pem
+  private_key = var.alb_frontend_private_key_pem
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
 # --------------------------------------------------
+
 
 resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
 
@@ -195,20 +215,35 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
     each.value.url_map_key
   ].id
 
+
+
+  # --------------------------------------------------
+  # FRONTEND SSL CERTIFICATE MAPPING
+  # Selects the HTTPS certificate for each ALB.
+  # --------------------------------------------------
+
   ssl_certificates = [
     {
       production      = google_compute_region_ssl_certificate.alb_frontend_certificate.id
       learning-alb-01 = google_compute_region_ssl_certificate.learning_alb_01_frontend_certificate.id
       learning-alb-02 = google_compute_region_ssl_certificate.learning_alb_02_frontend_certificate.id
+      mule-sbx-alb-01 = google_compute_region_ssl_certificate.mule_sbx_alb_01_frontend_certificate.id
     }[each.value.ssl_certificate_key]
   ]
+
+  # --------------------------------------------------
+  # FRONTEND mTLS SERVER TLS POLICY MAPPING
+  # Selects the client authentication policy for each ALB.
+  # --------------------------------------------------
 
   server_tls_policy = {
     production      = google_network_security_server_tls_policy.alb_frontend_mtls.id
     learning-alb-01 = google_network_security_server_tls_policy.learning_alb_01_frontend_mtls.id
     learning-alb-02 = google_network_security_server_tls_policy.learning_alb_02_frontend_mtls.id
+    mule-sbx-alb-01 = google_network_security_server_tls_policy.mule-sbx_alb_01_frontend_mtls.id
   }[each.value.server_tls_policy_key]
 }
+
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND IP RESERVATIONS
 # --------------------------------------------------
@@ -249,8 +284,9 @@ resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
   ip_protocol = "TCP"
   port_range  = tostring(each.value.port)
 }
+
 # --------------------------------------------------
-# BACKEND MTLS - ALB CLIENT CERTIFICATE
+# Production - BACKEND MTLS CLIENT CERTIFICATE
 # --------------------------------------------------
 
 resource "google_certificate_manager_certificate" "alb_backend_client_cert" {
@@ -282,8 +318,27 @@ resource "google_certificate_manager_certificate" "learning_alb_01_backend_clien
     pem_private_key = var.alb_backend_client_private_key_pem
   }
 }
+
 # --------------------------------------------------
-# BACKEND MTLS - AUTHENTICATION CONFIG
+# MULE SBX ALB 1 - BACKEND MTLS CLIENT CERTIFICATE
+# --------------------------------------------------
+
+resource "google_certificate_manager_certificate" "mule-sbx_alb_01_backend_client_cert" {
+
+  name     = "cert-nane1-mule-sbx-alb-backend-client-01"
+  location = var.region
+
+  scope = "CLIENT_AUTH"
+
+  self_managed {
+    pem_certificate = var.alb_backend_client_certificate_pem
+    pem_private_key = var.alb_backend_client_private_key_pem
+  }
+}
+
+
+# --------------------------------------------------
+# Production BACKEND MTLS - AUTHENTICATION CONFIG
 # --------------------------------------------------
 
 resource "google_network_security_backend_authentication_config" "alb_backend_auth" {
@@ -310,7 +365,20 @@ resource "google_network_security_backend_authentication_config" "learning_alb_0
   client_certificate = google_certificate_manager_certificate.learning_alb_01_backend_client_cert.id
 }
 # --------------------------------------------------
-# FRONTEND MTLS - TRUST CONFIG
+# MULE-SBX ALB 1 - BACKEND MTLS AUTHENTICATION CONFIG
+# --------------------------------------------------
+
+resource "google_network_security_backend_authentication_config" "mule-sbx_alb_01_backend_auth" {
+
+  name     = "backend-auth-nane1-mule-sbx-alb-01"
+  location = var.region
+
+  well_known_roots = "PUBLIC_ROOTS"
+
+  client_certificate = google_certificate_manager_certificate.mule-sbx_alb_01_backend_client_cert.id
+}
+# --------------------------------------------------
+# Production FRONTEND MTLS - TRUST CONFIG
 # --------------------------------------------------
 
 resource "google_certificate_manager_trust_config" "alb_frontend_trust" {
@@ -338,7 +406,21 @@ resource "google_certificate_manager_trust_config" "learning_alb_01_frontend_tru
   }
 }
 # --------------------------------------------------
-# FRONTEND MTLS - SERVER TLS POLICY
+# MULE SBX ALB 1 - FRONTEND MTLS TRUST CONFIG
+# --------------------------------------------------
+
+resource "google_certificate_manager_trust_config" "mule-sbx_alb_01_frontend_trust" {
+  name     = "trust-nane1-mule-alb-frontend-01"
+  location = var.region
+
+  trust_stores {
+    trust_anchors {
+      pem_certificate = var.alb_frontend_client_ca_pem
+    }
+  }
+}
+# --------------------------------------------------
+# Production FRONTEND MTLS - SERVER TLS POLICY
 # --------------------------------------------------
 
 resource "google_network_security_server_tls_policy" "alb_frontend_mtls" {
@@ -369,6 +451,24 @@ resource "google_network_security_server_tls_policy" "learning_alb_01_frontend_m
     client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.learning_alb_01_frontend_trust.name}"
   }
 }
+
+# --------------------------------------------------
+# MULE SBX ALB 1 - FRONTEND MTLS SERVER TLS POLICY
+# --------------------------------------------------
+
+resource "google_network_security_server_tls_policy" "mule-sbx_alb_01_frontend_mtls" {
+  name     = "tls-policy-nane1-mule-sbx-alb-frontend-01"
+  location = var.region
+
+  allow_open = false
+
+  mtls_policy {
+    client_validation_mode = "REJECT_INVALID"
+
+    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.mule-sbx_alb_01_frontend_trust.name}"
+  }
+}
+
 
 # Create multiple learning VPCs
 resource "google_compute_network" "learning_vpcs" {
