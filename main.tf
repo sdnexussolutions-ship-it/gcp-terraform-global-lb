@@ -140,6 +140,39 @@ resource "google_compute_region_url_map" "alb_url_maps" {
   default_service = google_compute_region_backend_service.alb_backend_services[
     each.value.default_backend_service_key
   ].id
+
+  dynamic "host_rule" {
+    for_each = length(each.value.path_rules) > 0 ? [1] : []
+
+    content {
+      hosts        = ["*"]
+      path_matcher = "path-matcher-1"
+    }
+  }
+
+  dynamic "path_matcher" {
+    for_each = length(each.value.path_rules) > 0 ? [1] : []
+
+    content {
+      name = "path-matcher-1"
+
+      default_service = google_compute_region_backend_service.alb_backend_services[
+        each.value.default_backend_service_key
+      ].id
+
+      dynamic "path_rule" {
+        for_each = each.value.path_rules
+
+        content {
+          paths = [path_rule.key]
+
+          service = google_compute_region_backend_service.alb_backend_services[
+            path_rule.value
+          ].id
+        }
+      }
+    }
+  }
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND SSL CERTIFICATE
