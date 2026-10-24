@@ -67,10 +67,12 @@ variable "alb_backend_services" {
 # --------------------------------------------------
 
 variable "alb_url_maps" {
-  description = "Regional URL maps for the Internal Application Load Balancer"
+  description = "Regional URL maps for Internal ALBs"
 
   type = map(object({
     default_backend_service_key = string
+
+    path_rules = optional(map(string), {})
   }))
 
   default = {}
