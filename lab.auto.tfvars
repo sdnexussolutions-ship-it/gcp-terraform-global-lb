@@ -1,7 +1,10 @@
 internal_albs = {
   mule = {
-    alb_zonal_negs = {
 
+    # ----------------------------------------
+    # VM-BASED ZONAL NEGs
+    # ----------------------------------------
+    alb_zonal_negs = {
       "neg-nane1-mule-sbx-alb-01" = {
         zone         = "northamerica-northeast1-a"
         network      = "default"
@@ -16,21 +19,17 @@ internal_albs = {
           }
         ]
       }
-      "neg-nane1-mule-dev-alb-01" = {
-        zone         = "northamerica-northeast1-a"
-        network      = "default"
-        subnetwork   = "default"
-        default_port = 443
+    }
 
-        network_endpoints = [
-          {
-            instance   = "internal-tcp-backend-02"
-            ip_address = "10.162.0.10"
-            port       = 443
-          }
-        ]
+    # ----------------------------------------
+    # CLOUD RUN SERVERLESS NEGs
+    # ----------------------------------------
+    alb_serverless_negs = {
+      "neg-nane1-mule-dev-cloudrun-01" = {
+        cloud_run_service = "mule-dev-cloudrun"
       }
     }
+
     # --------------------------------------------------
     # REGIONAL INTERNAL ALB HEALTH CHECKS
     # --------------------------------------------------
@@ -38,14 +37,6 @@ internal_albs = {
     alb_health_checks = {
 
       "hc-nane1-mule-sbx-alb-01" = {
-        protocol            = "TCP"
-        port                = 443
-        check_interval_sec  = 5
-        timeout_sec         = 5
-        healthy_threshold   = 2
-        unhealthy_threshold = 2
-      }
-      "hc-nane1-mule-dev-alb-01" = {
         protocol            = "TCP"
         port                = 443
         check_interval_sec  = 5
@@ -67,12 +58,11 @@ internal_albs = {
         zonal_neg_keys   = ["neg-nane1-mule-sbx-alb-01"]
         backend_auth_key = "mule-sbx-alb-01"
       }
+
       "be-nane1-mule-dev-alb-01" = {
-        protocol         = "HTTPS"
-        timeout_sec      = 30
-        health_check_key = "hc-nane1-mule-dev-alb-01"
-        zonal_neg_keys   = ["neg-nane1-mule-dev-alb-01"]
-        backend_auth_key = "mule-sbx-alb-01"
+        protocol            = "HTTP"
+        timeout_sec         = 30
+        serverless_neg_keys = ["neg-nane1-mule-dev-cloudrun-01"]
       }
     }
     # --------------------------------------------------
@@ -125,5 +115,15 @@ internal_albs = {
       }
     }
 
+  }
+}
+# --------------------------------------------------
+# Cloud Run
+# --------------------------------------------------
+
+cloud_run_services = {
+  "mule-dev-cloudrun" = {
+    image          = "us-docker.pkg.dev/cloudrun/container/hello"
+    container_port = 8080
   }
 }

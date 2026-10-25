@@ -1,5 +1,7 @@
-# Each entry is an independent ALB module instance.
-# Keep certificate secrets in Terraform Cloud sensitive variables, not tfvars.
+# ------------------------------------------
+# INTERNAL HTTPS APPLICATION LOAD BALANCERS
+# ------------------------------------------
+
 module "internal_albs" {
   source   = "./modules/internal-https-alb"
   for_each = var.internal_albs
@@ -13,6 +15,21 @@ module "internal_albs" {
     alb_backend_client_private_key_pem = var.alb_backend_client_private_key_pem
     alb_frontend_client_ca_pem         = var.alb_frontend_client_ca_pem
   })
+
+  depends_on = [module.cloud_run]
 }
 
-//
+# ------------------------------------------
+# CLOUD RUN SERVICES
+# ------------------------------------------
+
+module "cloud_run" {
+  source   = "./modules/cloud-run"
+  for_each = var.cloud_run_services
+
+  name           = each.key
+  project_id     = var.gcp_project_id
+  region         = var.region
+  image          = each.value.image
+  container_port = each.value.container_port
+}

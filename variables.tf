@@ -48,3 +48,12 @@ variable "internal_albs" {
   description = "Named independent internal HTTPS ALB configurations; each value contains the existing ALB map inputs."
   type        = map(any)
 }
+
+variable "cloud_run_services" {
+  description = "Cloud Run services to deploy"
+  type = map(object({
+    image          = string
+    container_port = optional(number, 8080)
+  }))
+  default = {}
+}
