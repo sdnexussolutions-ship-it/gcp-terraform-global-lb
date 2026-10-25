@@ -1,23 +1,19 @@
-# MULE Regional Internal HTTPS ALB — module refactor
+# MULE ALB — module for_each refactor
 
-This is a **state-address refactor** of the previous map-based MULE configuration, not a request to recreate infrastructure. The complete ALB stack lives in `modules/internal-https-alb/`; root `main.tf` calls it. Existing SBX/DEV backend maps, `/test1` and `/test2` routing, frontend and backend mTLS, and certificate inputs are preserved.
+This project refactors the *already migrated* `module.mule_internal_alb` to `module.internal_albs["mule"]` using a whole-module `moved` block. The existing MULE resources should move without replacement.
 
-## Migration safety
+## How to use
 
-1. Back up the current Terraform state/workspace and commit the current working configuration.
-2. Replace the four root files and add `moved.tf`, `outputs.tf`, and `modules/internal-https-alb/`. Remove old root resource blocks; do not retain both old and new definitions.
-3. Ensure certificate PEM variables remain supplied securely in Terraform Cloud (not in git). `lab.auto.tfvars` contains no certificate private keys.
-4. Run `terraform fmt -recursive`, `terraform init`, `terraform validate`, and `terraform plan`.
-5. Confirm the plan shows `has moved to` entries for the existing MULE resources, with **no destroy/create/replacement** for the MULE frontend IP, proxy, forwarding rule, TLS policies, certificates, NEGs, or backend services. The frontend must remain `10.162.0.12`.
-6. If non-MULE resources still exist in state from the prior configuration, Terraform may propose destroying them because they are absent here. Review these separately and ensure they are truly disposable. Do not apply until that list is approved.
-7. In Terraform Cloud VCS workflow, commit to a feature branch, review speculative plan, and merge only after review.
+Copy these files into the existing repository, preserving `.github/`, `versions.tf`, Terraform Cloud settings, and `.terraform.lock.hcl`. Do not copy local Terraform state. If your actual Terraform Cloud workspace uses other secret-variable names, adjust accordingly. Do not commit secrets.
 
-`moved.tf` covers the MULE root resource addresses. The mapping for `for_each` resources applies to all keyed instances. This design keeps the original resource names and map keys inside the child module to minimize churn.
+The root `main.tf` calls a module with `for_each = var.internal_albs`. Sensitive certificates remain separate root variables and are merged into the module config; Terraform Cloud can continue supplying them as sensitive variables. The `lab.auto.tfvars` contains only nonsecret configuration.
 
-## Adding backends
+Run `terraform fmt -recursive`, `terraform init`, `terraform validate`, then review a **Terraform Cloud plan** before applying. Confirm the existing module resources move and none of the MULE frontend, certificates, NEGs, or backends is destroyed/replaced. Never apply a plan that unexpectedly recreates `10.162.0.12`.
 
-Add a NEG entry, health check, backend service, and URL map path rule to `lab.auto.tfvars`. The module will instantiate resources using `for_each`; you do not need to duplicate resource blocks. Additional independent ALBs can use a second invocation of this module, but the hard-coded MULE certificate/trust/auth resources currently inside the module must first be generalized to support multiple independent instances without name collisions.
+## Important limitations
 
-## Known boundaries
+This is a first-stage refactor to support `for_each`, **not yet a fully generic multi-ALB module**: the child module still contains MULE-specific hardcoded certificate, trust config, backend authentication, and TLS/SNI naming. Adding a second `internal_albs` entry would cause resource-name collisions or wrong certificate/authentication. Do not add another independent ALB until those resources and inputs are generalized and certificates are supplied per instance.
 
-The module intentionally preserves existing TLS SNI, SAN, authentication mappings, and certificate resource names. It is a faithful refactor, not yet a fully generic multi-ALB implementation. Do not commit secrets, state files, or plan files. Run Terraform against your real provider/workspace to verify behavior; this package was not tested with a Terraform binary.
+Also, the old root-to-module moved blocks were replaced with a single `module.mule_internal_alb` to `module.internal_albs["mule"]` mapping, because the previous migration was already applied. If that prior migration has NOT been applied in the target workspace, do not use this moved.tf as-is.
+
+Local CLI state may be empty even when Terraform Cloud owns the real resources; use the VCS-linked workspace plan as the source of truth.
