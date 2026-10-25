@@ -122,8 +122,3 @@ alb_forwarding_rules = {
     port            = 443
   }
 }
-# Learning VPC configurations
-learning_vpcs = {}
-
-learning_subnets = {}
-
