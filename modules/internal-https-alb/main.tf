@@ -1,6 +1,6 @@
 # Read information about our existing GCP project
 data "google_project" "current" {
-  project_id = var.gcp_project_id
+  project_id = var.config.gcp_project_id
 }
 locals {
   # Add new authentication mappings here when introducing additional ALBs.
@@ -17,7 +17,7 @@ locals {
 
 resource "google_compute_network_endpoint_group" "alb_zonal_negs" {
 
-  for_each = var.alb_zonal_negs
+  for_each = var.config.alb_zonal_negs
 
   name                  = each.key
   zone                  = each.value.zone
@@ -37,7 +37,7 @@ resource "google_compute_network_endpoint" "alb_endpoints" {
 
   for_each = {
     for endpoint in flatten([
-      for neg_name, neg in var.alb_zonal_negs : [
+      for neg_name, neg in var.config.alb_zonal_negs : [
         for index, ep in neg.network_endpoints : {
           key        = "${neg_name}-${index}"
           neg_name   = neg_name
@@ -63,10 +63,10 @@ resource "google_compute_network_endpoint" "alb_endpoints" {
 
 resource "google_compute_region_health_check" "alb_health_checks" {
 
-  for_each = var.alb_health_checks
+  for_each = var.config.alb_health_checks
 
   name   = each.key
-  region = var.region
+  region = var.config.region
 
   check_interval_sec  = each.value.check_interval_sec
   timeout_sec         = each.value.timeout_sec
@@ -83,10 +83,10 @@ resource "google_compute_region_health_check" "alb_health_checks" {
 
 resource "google_compute_region_backend_service" "alb_backend_services" {
 
-  for_each = var.alb_backend_services
+  for_each = var.config.alb_backend_services
 
   name                  = each.key
-  region                = var.region
+  region                = var.config.region
   protocol              = each.value.protocol
   load_balancing_scheme = "INTERNAL_MANAGED"
   timeout_sec           = each.value.timeout_sec
@@ -130,10 +130,10 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
 
 resource "google_compute_region_url_map" "alb_url_maps" {
 
-  for_each = var.alb_url_maps
+  for_each = var.config.alb_url_maps
 
   name   = each.key
-  region = var.region
+  region = var.config.region
 
   default_service = google_compute_region_backend_service.alb_backend_services[
     each.value.default_backend_service_key
@@ -181,10 +181,10 @@ resource "google_compute_region_url_map" "alb_url_maps" {
 resource "google_compute_region_ssl_certificate" "mule_sbx_alb_01_frontend_certificate" {
 
   name   = "cert-nane1-mule-sbx-alb-01"
-  region = var.region
+  region = var.config.region
 
-  certificate = var.alb_frontend_certificate_pem
-  private_key = var.alb_frontend_private_key_pem
+  certificate = var.config.alb_frontend_certificate_pem
+  private_key = var.config.alb_frontend_private_key_pem
 
   lifecycle {
     create_before_destroy = true
@@ -194,10 +194,10 @@ resource "google_compute_region_ssl_certificate" "mule_sbx_alb_01_frontend_certi
 
 resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
 
-  for_each = var.alb_target_https_proxies
+  for_each = var.config.alb_target_https_proxies
 
   name   = each.key
-  region = var.region
+  region = var.config.region
 
   url_map = google_compute_region_url_map.alb_url_maps[
     each.value.url_map_key
@@ -232,10 +232,10 @@ resource "google_compute_region_target_https_proxy" "alb_target_https_proxies" {
 
 resource "google_compute_address" "alb_frontend_ips" {
 
-  for_each = var.alb_frontend_ips
+  for_each = var.config.alb_frontend_ips
 
   name         = each.key
-  region       = var.region
+  region       = var.config.region
   address_type = each.value.address_type
   subnetwork   = each.value.subnetwork
 
@@ -246,10 +246,10 @@ resource "google_compute_address" "alb_frontend_ips" {
 # --------------------------------------------------
 
 resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
-  for_each = var.alb_forwarding_rules
+  for_each = var.config.alb_forwarding_rules
 
   name                  = each.key
-  region                = var.region
+  region                = var.config.region
   load_balancing_scheme = "INTERNAL_MANAGED"
   network               = each.value.network
 
@@ -276,13 +276,13 @@ resource "google_compute_forwarding_rule" "alb_forwarding_rules" {
 resource "google_certificate_manager_certificate" "mule-sbx_alb_01_backend_client_cert" {
 
   name     = "cert-nane1-mule-sbx-alb-backend-client-01"
-  location = var.region
+  location = var.config.region
 
   scope = "CLIENT_AUTH"
 
   self_managed {
-    pem_certificate = var.alb_backend_client_certificate_pem
-    pem_private_key = var.alb_backend_client_private_key_pem
+    pem_certificate = var.config.alb_backend_client_certificate_pem
+    pem_private_key = var.config.alb_backend_client_private_key_pem
   }
 }
 
@@ -296,7 +296,7 @@ resource "google_certificate_manager_certificate" "mule-sbx_alb_01_backend_clien
 resource "google_network_security_backend_authentication_config" "mule-sbx_alb_01_backend_auth" {
 
   name     = "backend-auth-nane1-mule-sbx-alb-01"
-  location = var.region
+  location = var.config.region
 
   well_known_roots = "PUBLIC_ROOTS"
 
@@ -310,11 +310,11 @@ resource "google_network_security_backend_authentication_config" "mule-sbx_alb_0
 
 resource "google_certificate_manager_trust_config" "mule-sbx_alb_01_frontend_trust" {
   name     = "trust-nane1-mule-alb-frontend-01"
-  location = var.region
+  location = var.config.region
 
   trust_stores {
     trust_anchors {
-      pem_certificate = var.alb_frontend_client_ca_pem
+      pem_certificate = var.config.alb_frontend_client_ca_pem
     }
   }
 }
@@ -326,14 +326,14 @@ resource "google_certificate_manager_trust_config" "mule-sbx_alb_01_frontend_tru
 
 resource "google_network_security_server_tls_policy" "mule-sbx_alb_01_frontend_mtls" {
   name     = "tls-policy-nane1-mule-sbx-alb-frontend-01"
-  location = var.region
+  location = var.config.region
 
   allow_open = false
 
   mtls_policy {
     client_validation_mode = "REJECT_INVALID"
 
-    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.region}/trustConfigs/${google_certificate_manager_trust_config.mule-sbx_alb_01_frontend_trust.name}"
+    client_validation_trust_config = "projects/${data.google_project.current.number}/locations/${var.config.region}/trustConfigs/${google_certificate_manager_trust_config.mule-sbx_alb_01_frontend_trust.name}"
   }
 }
 

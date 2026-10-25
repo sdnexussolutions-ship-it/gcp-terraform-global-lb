@@ -9,93 +9,6 @@ variable "region" {
   default     = "northamerica-northeast1"
 }
 
-variable "alb_zonal_negs" {
-  description = "Zonal Network Endpoint Groups and their VM endpoints"
-
-  type = map(object({
-    zone         = string
-    network      = string
-    subnetwork   = string
-    default_port = number
-
-    network_endpoints = list(object({
-      instance   = string
-      ip_address = string
-      port       = number
-    }))
-  }))
-
-  default = {}
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB HEALTH CHECKS
-# --------------------------------------------------
-
-variable "alb_health_checks" {
-  description = "Regional health checks for the Internal Application Load Balancer"
-
-  type = map(object({
-    protocol            = string
-    port                = number
-    check_interval_sec  = number
-    timeout_sec         = number
-    healthy_threshold   = number
-    unhealthy_threshold = number
-  }))
-
-  default = {}
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB BACKEND SERVICES
-# --------------------------------------------------
-
-variable "alb_backend_services" {
-  description = "Regional backend services for the Internal Application Load Balancer"
-
-  type = map(object({
-    protocol         = string
-    timeout_sec      = number
-    health_check_key = string
-    zonal_neg_keys   = list(string)
-    backend_auth_key = string
-  }))
-
-  default = {}
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB URL MAPS
-# --------------------------------------------------
-
-variable "alb_url_maps" {
-  description = "Regional URL maps for Internal ALBs"
-
-  type = map(object({
-    default_backend_service_key = string
-
-    path_rules = optional(map(string), {})
-  }))
-
-  default = {}
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB TARGET HTTPS PROXIES
-# --------------------------------------------------
-
-variable "alb_target_https_proxies" {
-  description = "Regional target HTTPS proxies for the Internal Application Load Balancer"
-
-  type = map(object({
-    url_map_key           = string
-    ssl_certificate_key   = string
-    server_tls_policy_key = string
-  }))
-
-  default = {}
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB FRONTEND TLS CERTIFICATE
-# --------------------------------------------------
-
 variable "alb_frontend_certificate_pem" {
   description = "PEM-encoded frontend server certificate and chain"
   type        = string
@@ -111,35 +24,6 @@ variable "alb_frontend_private_key_pem" {
 }
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB FRONTEND IP ADDRESSES
-# --------------------------------------------------
-
-variable "alb_frontend_ips" {
-  description = "Regional internal IP reservations for Application Load Balancer frontends"
-
-  type = map(object({
-    address_type = string
-    subnetwork   = string
-    learning_vpc = optional(bool, false)
-  }))
-}
-# --------------------------------------------------
-# REGIONAL INTERNAL ALB FORWARDING RULES
-# --------------------------------------------------
-
-variable "alb_forwarding_rules" {
-  description = "Regional internal ALB frontend forwarding rules"
-
-  type = map(object({
-    network         = string
-    subnetwork      = string
-    ip_address_key  = string
-    https_proxy_key = string
-    port            = number
-    learning_vpc    = optional(bool, false)
-  }))
-}
-# --------------------------------------------------
-# BACKEND MTLS CERTIFICATE MATERIAL
 # --------------------------------------------------
 
 variable "alb_backend_client_certificate_pem" {
@@ -158,4 +42,9 @@ variable "alb_frontend_client_ca_pem" {
   description = "Trusted CA certificate for frontend mTLS client authentication"
   type        = string
   sensitive   = true
+}
+
+variable "internal_albs" {
+  description = "Named independent internal HTTPS ALB configurations; each value contains the existing ALB map inputs."
+  type        = map(any)
 }
