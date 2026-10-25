@@ -57,6 +57,25 @@ resource "google_compute_network_endpoint" "alb_endpoints" {
   ip_address = each.value.ip_address
   port       = each.value.port
 }
+
+# --------------------------------------------------
+# Serverless NETWORK ENDPOINT GROUPS
+# Regional Internal Application Load Balancer
+# --------------------------------------------------
+
+resource "google_compute_region_network_endpoint_group" "alb_serverless_negs" {
+  for_each = var.config.alb_serverless_negs
+
+  name                  = each.key
+  project               = var.config.gcp_project_id
+  region                = var.config.region
+  network_endpoint_type = "SERVERLESS"
+
+  cloud_run {
+    service = each.value.cloud_run_service
+  }
+}
+
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB HEALTH CHECKS
 # --------------------------------------------------
@@ -80,7 +99,6 @@ resource "google_compute_region_health_check" "alb_health_checks" {
 # --------------------------------------------------
 # REGIONAL INTERNAL ALB BACKEND SERVICES
 # --------------------------------------------------
-
 resource "google_compute_region_backend_service" "alb_backend_services" {
 
   for_each = var.config.alb_backend_services
@@ -91,14 +109,17 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
   load_balancing_scheme = "INTERNAL_MANAGED"
   timeout_sec           = each.value.timeout_sec
 
-  health_checks = [
+  # Health checks are required for VM NEGs,
+  # but must be omitted for Cloud Run serverless NEGs.
+  health_checks = try(each.value.health_check_key, null) != null ? [
     google_compute_region_health_check.alb_health_checks[
       each.value.health_check_key
     ].id
-  ]
+  ] : null
 
+  # VM-based zonal NEGs
   dynamic "backend" {
-    for_each = each.value.zonal_neg_keys
+    for_each = try(each.value.zonal_neg_keys, [])
 
     content {
       group = google_compute_network_endpoint_group.alb_zonal_negs[
@@ -111,16 +132,30 @@ resource "google_compute_region_backend_service" "alb_backend_services" {
     }
   }
 
-  # Backend TLS and mutual TLS authentication
-  tls_settings {
+  # Cloud Run serverless NEGs
+  dynamic "backend" {
+    for_each = try(each.value.serverless_neg_keys, [])
 
-    sni = "glb-prd.igmfinancial.net"
-
-    subject_alt_names {
-      dns_name = "glb-prd.igmfinancial.net"
+    content {
+      group = google_compute_region_network_endpoint_group.alb_serverless_negs[
+        backend.value
+      ].id
     }
+  }
 
-    authentication_config = "//networksecurity.googleapis.com/${local.backend_auth_ids[each.value.backend_auth_key]}"
+  # Backend TLS/mTLS is only for VM-based backends.
+  dynamic "tls_settings" {
+    for_each = try(each.value.backend_auth_key, null) != null ? [1] : []
+
+    content {
+      sni = "glb-prd.igmfinancial.net"
+
+      subject_alt_names {
+        dns_name = "glb-prd.igmfinancial.net"
+      }
+
+      authentication_config = "//networksecurity.googleapis.com/${local.backend_auth_ids[each.value.backend_auth_key]}"
+    }
   }
 }
 
