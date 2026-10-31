@@ -61,3 +61,12 @@ variable "cloud_run_services" {
   }))
   default = {}
 }
+
+
+# Global External HTTPS Application Load Balancers
+variable "global_external_albs" {
+  description = "Configuration for global external HTTPS Application Load Balancers"
+
+  type    = map(any)
+  default = {}
+}
