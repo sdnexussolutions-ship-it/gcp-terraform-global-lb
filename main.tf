@@ -33,3 +33,18 @@ module "cloud_run" {
   image          = each.value.image
   container_port = each.value.container_port
 }
+
+
+# Global External HTTPS Application Load Balancers
+module "global_external_albs" {
+  source   = "./modules/global-external-https-alb"
+  for_each = var.global_external_albs
+
+  config = merge(each.value, {
+    gcp_project_id               = var.gcp_project_id
+    region                       = var.region
+    alb_frontend_certificate_pem = var.alb_frontend_certificate_pem
+    alb_frontend_private_key_pem = var.alb_frontend_private_key_pem
+    alb_frontend_client_ca_pem   = var.alb_frontend_client_ca_pem
+  })
+}
