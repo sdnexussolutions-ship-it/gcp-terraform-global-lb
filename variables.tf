@@ -30,12 +30,14 @@ variable "alb_backend_client_certificate_pem" {
   description = "PEM certificate presented by the ALB to the backend"
   type        = string
   sensitive   = true
+  default     = null
 }
 
 variable "alb_backend_client_private_key_pem" {
   description = "Private key for the ALB backend client certificate"
   type        = string
   sensitive   = true
+  default     = null
 }
 
 variable "alb_frontend_client_ca_pem" {
@@ -44,9 +46,11 @@ variable "alb_frontend_client_ca_pem" {
   sensitive   = true
 }
 
+
 variable "internal_albs" {
-  description = "Named independent internal HTTPS ALB configurations; each value contains the existing ALB map inputs."
+  description = "Named independent internal HTTPS ALB configurations"
   type        = map(any)
+  default     = {}
 }
 
 variable "cloud_run_services" {
